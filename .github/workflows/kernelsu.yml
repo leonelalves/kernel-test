@@ -3,6 +3,9 @@ name: Update KernelSU
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -11,19 +14,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: recursive
+          token: ${{ secrets.KERNEL_TOKEN }}
 
-      - name: Update submodule
+      - name: Configure git
         run: |
-          git submodule update --remote --recursive
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          if ! git diff --quiet; then
-            COMMIT=$(cd "KernelSU" && git rev-parse --short HEAD)
+      - name: Update KernelSU
+        run: |
+          git submodule update --remote --recursive
 
-            git commit -am "KernelSU: update to '$COMMIT'"
+          if ! git diff --quiet; then
+            COMMIT=$(cd KernelSU && git rev-parse --short HEAD)
+
+            git add KernelSU
+            git commit -m "KernelSU: update to '$COMMIT'"
             git push
           else
             echo "Submodules are up-to-date!"
